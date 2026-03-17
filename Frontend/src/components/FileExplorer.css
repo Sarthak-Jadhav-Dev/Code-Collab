@@ -1,0 +1,338 @@
+/* File Explorer Styles - VS Code Theme */
+.file-explorer {
+  height: 100%;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #333;
+}
+
+.file-explorer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 8px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+  min-height: 40px;
+  gap: 8px;
+}
+
+.project-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0; /* Allow shrinking */
+}
+
+.project-name {
+  color: #cccccc;
+  font-weight: 600;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100%;
+  margin-bottom: 4px;
+}
+
+.local-sync-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #969696;
+  max-width: 100%;
+}
+
+.sync-indicator {
+  font-size: 12px;
+}
+
+.sync-path {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.explorer-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  flex-shrink: 0; /* Prevent shrinking */
+  transition: background-color 0.2s;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: #2a2d2e;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 3px;
+  margin: 1px 4px;
+  transition: background-color 0.1s;
+  position: relative;
+}
+
+.file-item:hover {
+  background: #2a2d2e;
+}
+
+.file-item.active {
+  background: #37373d;
+  color: white;
+}
+
+.file-item-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
+  color: #cccccc;
+}
+
+.file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  color: #75beff;
+}
+
+.file-type-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.file-name {
+  flex: 1;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.file-item:hover .file-actions {
+  opacity: 1;
+}
+
+.file-action-btn {
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+}
+
+.file-action-btn:hover {
+  background: #505050;
+}
+
+.folder-children {
+  margin-left: 0;
+}
+
+.rename-input {
+  background: #3c3c3c;
+  border: 1px solid #007acc;
+  color: #d4d4d4;
+  padding: 1px 4px;
+  font-size: 13px;
+  font-family: inherit;
+  border-radius: 2px;
+  outline: none;
+  flex: 1;
+}
+
+/* Context Menu */
+.context-menu {
+  position: fixed;
+  background: #2d2d30;
+  border: 1px solid #454545;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  min-width: 160px;
+  padding: 4px 0;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #cccccc;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.context-menu-item:hover {
+  background: #094771;
+}
+
+.context-menu-item.delete {
+  color: #f48771;
+}
+
+.context-menu-item.delete:hover {
+  background: #5a1d1d;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: #454545;
+  margin: 4px 0;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #969696;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+}
+
+.upload-folder-btn {
+  background: #0e639c;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s;
+}
+
+.upload-folder-btn:hover:not(:disabled) {
+  background: #1177bb;
+}
+
+.upload-folder-btn:disabled {
+  background: #505050;
+  cursor: not-allowed;
+}
+
+/* Loading States */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(30, 30, 30, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #cccccc;
+  gap: 12px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #333;
+  border-top: 2px solid #007acc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Scrollbar Styling */
+.file-tree::-webkit-scrollbar {
+  width: 10px;
+}
+
+.file-tree::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.file-tree::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 5px;
+}
+
+.file-tree::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
