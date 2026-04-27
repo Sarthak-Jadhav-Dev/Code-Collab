@@ -1,4 +1,4 @@
-﻿﻿import React, { useEffect, useRef, useState, useMemo, memo } from "react"; // Added 'memo'
+﻿import React, { useEffect, useRef, useState, useMemo, memo } from "react"; // Added 'memo'
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
@@ -27,7 +27,7 @@ import {
   VscCopy,
   VscSend,
 } from "react-icons/vsc";
-import { FaUserCircle, FaRobot } from "react-icons/fa";
+import { FaUserCircle, FaRobot, FaPaperPlane } from "react-icons/fa";
 import axios from "axios";
 import FileExplorer from "./components/FileExplorer";
 import "./PanelStyles.css";
@@ -2071,7 +2071,7 @@ const CollaborativeEditor = () => {
                       aiThinking
                     }
                   >
-                    <VscSend />
+                    <FaPaperPlane style={{ marginLeft: '-2px', marginTop: '2px' }} />
                   </button>
                 </form>
               </div>

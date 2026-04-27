@@ -198,6 +198,40 @@ app.post('/api/auth/login', cors(corsOptions), async (req, res) => {
   }
 });
 
+app.post('/api/auth/login-otp', cors(corsOptions), async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: "Email and OTP are required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: "User not found." });
+
+    const record = global.signupOtps?.[email];
+    if (!record) {
+      return res.status(400).json({ error: "OTP not found or expired. Please request a new one." });
+    }
+
+    if (Date.now() > record.expires) {
+      delete global.signupOtps[email];
+      return res.status(400).json({ error: "OTP expired." });
+    }
+
+    if (record.otp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP." });
+    }
+
+    // OTP is valid, clear it
+    delete global.signupOtps[email];
+
+    // Generate token
+    const token = jwt.sign({ userId: user._id, name: user.name, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, name: user.name });
+  } catch (error) {
+    console.error('Error during OTP login:', error);
+    res.status(500).json({ error: "An unexpected error occurred during OTP verification." });
+  }
+});
+
 // Code Execution Endpoint
 app.post('/api/run', async (req, res) => {
   const { code, language } = req.body;

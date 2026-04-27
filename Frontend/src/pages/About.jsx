@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import TeamTimeline from "../components/TeamTimeline";
 
 const team = [
-  { name: "Aryan Jadhav", role: "", img: "https://randomuser.me/api/portraits/lego/5.jpg" },
+  { name: "Rajat Kumar", role: "", img: "https://randomuser.me/api/portraits/lego/5.jpg" },
   { name: "Darshan Jadhav", role: "", img: "https://randomuser.me/api/portraits/lego/5.jpg" },
   { name: "Sanskar Jadhav", role: "", img: "https://randomuser.me/api/portraits/lego/5.jpg" },
   { name: "Sarthak Jadhav", role: "", img: "https://randomuser.me/api/portraits/lego/5.jpg" }

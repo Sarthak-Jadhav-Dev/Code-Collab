@@ -29,6 +29,12 @@
   gap: 16px;
 }
 
+.vsc-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .vsc-title {
   color: #fff;
   font-weight: 600;
@@ -486,27 +492,33 @@
 }
 
 .send-button {
-  background-color: #007acc;
+  background: linear-gradient(135deg, #007acc 0%, #005a9e 100%);
   color: white;
   border: none;
-  border-radius: 6px;
-  width: 36px;
-  height: 36px;
+  /* border-radius: 8px; */
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
-  font-size: 18px;
+  transition: all 0.2s ease;
+  font-size: 22px;
+  box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
 }
 
-.send-button:hover {
-  background-color: #0098f7;
+.send-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0098f7 0%, #007acc 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 122, 204, 0.4);
 }
 
 .send-button:disabled {
-  background-color: #333;
+  background: #333333;
+  color: #666666;
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .vsc-join-notification {
