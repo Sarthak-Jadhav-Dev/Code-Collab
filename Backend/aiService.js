@@ -6,7 +6,6 @@ class AIService {
     const provider = process.env.AI_PROVIDER || 'openai';
 
     if (provider === 'gemini') {
-      // Initialize Google Gemini AI
       this.genAI = new GoogleGenerativeAI(process.env.AI_API_KEY);
       this.model = this.genAI.getGenerativeModel({
         model: process.env.AI_MODEL || 'gemini-2.0-flash-exp',
@@ -19,12 +18,10 @@ class AIService {
       });
       this.provider = 'gemini';
     } else {
-      // Initialize OpenAI (fallback) only when needed
       this.provider = 'openai';
     }
   }
 
-  // Lazy initialization of OpenAI client
   initializeOpenAI() {
     if (this.provider === 'openai' && !this.openai) {
       this.openai = new OpenAI({
@@ -38,7 +35,7 @@ class AIService {
 
   async askAI(roomId, prompt, context = {}, retryCount = 0) {
     const maxRetries = 3;
-    const retryDelay = 2000; // 2 seconds
+    const retryDelay = 2000; 
 
     try {
       const systemPrompt = this.buildSystemPrompt(context);
@@ -51,7 +48,6 @@ class AIService {
 
         return { message: text, success: true };
       } else {
-        // Initialize OpenAI only when needed
         this.initializeOpenAI();
         const response = await this.openai.chat.completions.create({
           model: this.modelName,
@@ -69,7 +65,6 @@ class AIService {
     } catch (error) {
       console.error('AI Service Error:', error);
 
-      // Handle rate limiting errors with retry logic
       if (error.message && (error.message.includes('429') || error.message.includes('rate limit'))) {
         if (retryCount < maxRetries) {
           console.log(`Rate limit hit, retrying in ${retryDelay}ms... (Attempt ${retryCount + 1}/${maxRetries})`);
@@ -83,7 +78,6 @@ class AIService {
         }
       }
 
-      // Handle timeout errors with retry logic
       if (error.message && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT'))) {
         if (retryCount < maxRetries) {
           console.log(`Timeout error, retrying in ${retryDelay}ms... (Attempt ${retryCount + 1}/${maxRetries})`);
@@ -97,7 +91,6 @@ class AIService {
         }
       }
 
-      // Handle API key errors
       if (error.message && (error.message.includes('API key') || error.message.includes('authentication'))) {
         console.error('AI Service API Key Error:', error);
         return {
@@ -106,7 +99,6 @@ class AIService {
         };
       }
 
-      // Handle content filtering errors
       if (error.message && error.message.includes('content filter')) {
         console.error('AI Service Content Filter Error:', error);
         return {

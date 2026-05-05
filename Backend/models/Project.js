@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Schema for individual file/folder items
 const FileItemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -27,14 +26,13 @@ const FileItemSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  children: [this], // For nested folder structure
+  children: [this], 
   isExpanded: {
     type: Boolean,
     default: false
   }
 });
 
-// Main project schema for each room
 const ProjectSchema = new mongoose.Schema({
   roomId: {
     type: String,
@@ -80,10 +78,8 @@ const ProjectSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient querying
 ProjectSchema.index({ roomId: 1 });
 
-// Method to find file by path
 ProjectSchema.methods.findFileByPath = function(path) {
   const findInStructure = (items, targetPath) => {
     for (let item of items) {
@@ -101,7 +97,6 @@ ProjectSchema.methods.findFileByPath = function(path) {
   return findInStructure(this.fileStructure, path);
 };
 
-// Method to update file content
 ProjectSchema.methods.updateFileContent = function(path, content) {
   const file = this.findFileByPath(path);
   if (file && file.type === 'file') {
@@ -113,7 +108,6 @@ ProjectSchema.methods.updateFileContent = function(path, content) {
   return false;
 };
 
-// Method to add new file/folder
 ProjectSchema.methods.addFileItem = function(parentPath, item) {
   const addToStructure = (items, targetPath, newItem) => {
     if (targetPath === '' || targetPath === '/') {
@@ -143,7 +137,6 @@ ProjectSchema.methods.addFileItem = function(parentPath, item) {
   return success;
 };
 
-// Method to delete file/folder
 ProjectSchema.methods.deleteFileItem = function(path) {
   const deleteFromStructure = (items, targetPath) => {
     for (let i = 0; i < items.length; i++) {

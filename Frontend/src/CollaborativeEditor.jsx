@@ -444,6 +444,7 @@ const CollaborativeEditor = () => {
   useEffect(() => {
     // Join room when component mounts
     const userName = localStorage.getItem("name") || "Anonymous";
+    console.log("🔗 Joining room:", roomId, "as user:", userName);
     socket.emit("joinRoom", { roomId, userName });
 
     // Listen for user joined notifications
@@ -480,9 +481,16 @@ const CollaborativeEditor = () => {
 
     // Listen for AI responses
     socket.on("aiResponse", (data) => {
+      console.log("📨 aiResponse received:", data);
+      console.log("Current roomId:", roomId);
+      console.log("Data roomId:", data.roomId);
+      console.log("Room IDs match:", data.roomId === roomId);
+      
       if (data.roomId === roomId) {
+        console.log("✅ Room ID matches, processing response...");
         setAiThinking(false);
         if (data.success) {
+          console.log("✅ AI response successful");
           const newMessage = {
             user: "AI",
             msg: data.message,
@@ -492,6 +500,9 @@ const CollaborativeEditor = () => {
           // Create a unique identifier for this message
           const messageKey = `${newMessage.user
             }-${newMessage.timestamp.getTime()}-${newMessage.msg.substring(0, 30)}`;
+
+          console.log("Message key:", messageKey);
+          console.log("Already processed:", processedMessages.has(messageKey));
 
           // Additional check for content similarity to prevent repetitive responses
           const isSimilarToLast =
@@ -506,13 +517,18 @@ const CollaborativeEditor = () => {
                 aiChat[aiChat.length - 1].msg.substring(0, 20)
               ));
 
+          console.log("Similar to last:", isSimilarToLast);
+
           // Only add the message if it hasn't been processed yet and isn't repetitive
           if (!processedMessages.has(messageKey) && !isSimilarToLast) {
+            console.log("✅ Adding message to chat...");
             setProcessedMessages((prev) => new Set(prev).add(messageKey));
             setAiChat((prev) => [...prev, newMessage]);
             // Reset retry count on successful response
             setAiRetryCount(0);
             setAiLastError("");
+          } else {
+            console.log("❌ Message not added: Already processed or similar to last");
           }
         } else {
           // Handle retry logic for busy AI service
@@ -560,6 +576,8 @@ const CollaborativeEditor = () => {
             }
           }
         }
+      } else {
+        console.log("❌ Room ID mismatch! Expected:", roomId, "Got:", data.roomId);
       }
     });
 
@@ -1230,6 +1248,8 @@ const CollaborativeEditor = () => {
     const userMessage = { user: userName, msg: aiInput, timestamp: new Date() };
     setAiChat((chat) => [...chat, userMessage]);
     setLastUserMessage(aiInput);
+    console.log("🚀 Sending AI request with roomId:", roomId);
+    console.log("📝 Prompt:", aiInput);
     socket.emit("askAI", {
       roomId,
       prompt: aiInput,

@@ -7,16 +7,12 @@ const Project = require('../models/Project');
 
 const router = express.Router();
 
-// This will be set when the module is initialized with io
 let socketIO = null;
 
-// Store project folder mappings in memory
 const projectPaths = {};
 
-// Store user local directory mappings
 const userLocalPaths = {};
 
-// Helper function to get project path
 const getProjectPath = (roomId) => {
   if (!projectPaths[roomId]) {
     const uploadDir = path.join(__dirname, '../uploads', roomId);
@@ -25,34 +21,28 @@ const getProjectPath = (roomId) => {
   return projectPaths[roomId];
 };
 
-// Helper function to get user local path
 const getUserLocalPath = (roomId) => {
   return userLocalPaths[roomId] || null;
 };
 
-// Helper function to set user local path
 const setUserLocalPath = (roomId, localPath) => {
   userLocalPaths[roomId] = localPath;
 };
 
-// Configure multer for file uploads - USE MEMORY STORAGE for better performance
 const storage = multer.memoryStorage();
 
-// Optimize multer configuration for better upload performance
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB per file (reduce from 50MB for better performance)
-    files: 100 // Max 100 files per upload (reduce from 500 for better performance)
+    fileSize: 10 * 1024 * 1024, 
+    files: 100 
   },
   fileFilter: (req, file, cb) => {
-    // Allow all files for now - we'll handle validation later
     console.log(`Filtering file: ${file.originalname}, mimetype: ${file.mimetype}`);
     cb(null, true);
   }
 });
 
-// Helper function to build file tree from uploaded files - OPTIMIZED VERSION
 const buildFileTree = async (files, uploadDir, roomId) => {
   const fileTree = [];
   const fileMap = new Map();
@@ -60,7 +50,6 @@ const buildFileTree = async (files, uploadDir, roomId) => {
   console.log(`Building file tree for room ${roomId} in directory: ${uploadDir}`);
   console.log(`Number of files to process: ${files.length}`);
 
-  // Process each uploaded file
   for (const file of files) {
     const relativePath = file.originalname;
     const pathParts = relativePath.split(path.sep);
@@ -72,10 +61,8 @@ const buildFileTree = async (files, uploadDir, roomId) => {
     console.log(`File object buffer exists: ${!!file.buffer}`);
     console.log(`File object buffer length: ${file.buffer?.length || 0}`);
 
-    // Read the actual uploaded file content - prioritize the buffer from multer
     let content = '';
 
-    // First, try to get content from the file buffer (multer provides this)
     if (file.buffer && file.buffer.length > 0) {
       try {
         content = file.buffer.toString('utf-8');
@@ -85,18 +72,15 @@ const buildFileTree = async (files, uploadDir, roomId) => {
         content = `Binary file (${file.size} bytes)`;
       }
     } else {
-      // If no buffer, this shouldn't happen with memory storage, but just in case
       console.log(`No buffer available, this shouldn't happen with memory storage`);
       content = '// File not found';
     }
 
     console.log(`Final content length: ${content.length} for ${relativePath}`);
 
-    // Create file item
     const fileItem = {
       name: pathParts[pathParts.length - 1],
-      path: relativePath.replace(/\\/g, '/'), // Normalize path separators
-      type: 'file',
+      path: relativePath.replace(/\\/g, '/'), 
       content,
       size: file.size,
       lastModified: new Date(),
@@ -106,7 +90,6 @@ const buildFileTree = async (files, uploadDir, roomId) => {
     fileMap.set(relativePath, fileItem);
     console.log(`Created file item:`, fileItem);
 
-    // Create folder structure
     let currentPath = '';
     let currentLevel = fileTree;
 
@@ -135,11 +118,9 @@ const buildFileTree = async (files, uploadDir, roomId) => {
       currentLevel = folder.children;
     }
 
-    // Add file to its parent folder
     currentLevel.push(fileItem);
     console.log(`Added file to parent folder`);
 
-    // Also ensure the file is properly saved to disk with its content
     try {
       const fileSavePath = path.join(uploadDir, relativePath);
       await fs.ensureDir(path.dirname(fileSavePath));
@@ -154,7 +135,6 @@ const buildFileTree = async (files, uploadDir, roomId) => {
   return fileTree;
 };
 
-// Upload folder endpoint - OPTIMIZED VERSION
 router.post('/upload-folder', upload.array('files'), async (req, res) => {
   try {
     const { roomId, projectName = 'Uploaded Project', uploadedBy = 'Unknown', localPath } = req.body;
@@ -169,7 +149,6 @@ router.post('/upload-folder', upload.array('files'), async (req, res) => {
       return res.status(400).json({ error: 'Room ID is required' });
     }
 
-    // Store the user's local path if provided
     if (localPath) {
       setUserLocalPath(roomId, localPath);
     }
@@ -179,7 +158,6 @@ router.post('/upload-folder', upload.array('files'), async (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    // Validate file limits
     if (req.files.length > 100) {
       return res.status(400).json({ error: 'Too many files. Maximum 100 files allowed per upload.' });
     }
@@ -187,27 +165,22 @@ router.post('/upload-folder', upload.array('files'), async (req, res) => {
     const uploadDir = getProjectPath(roomId);
     console.log(`Project will be uploaded to: ${uploadDir}`);
 
-    // Ensure upload directory exists
     await fs.ensureDir(uploadDir);
 
-    // Build file tree structure
     console.log('Building file tree structure...');
     const fileStructure = await buildFileTree(req.files, uploadDir, roomId);
     console.log('File tree structure built successfully');
 
-    // Save or update project in database
     console.log('Saving project to database...');
     let project = await Project.findOne({ roomId });
 
     if (project) {
-      // Update existing project
       project.fileStructure = fileStructure;
       project.projectName = projectName;
       project.uploadedBy = uploadedBy;
       project.lastModified = new Date();
       console.log(`Updating existing project for room: ${roomId}`);
     } else {
-      // Create new project
       project = new Project({
         roomId,
         projectName,
@@ -221,7 +194,6 @@ router.post('/upload-folder', upload.array('files'), async (req, res) => {
     await project.save();
     console.log(`Project saved successfully for room: ${roomId}`);
 
-    // Send immediate response to improve perceived performance
     res.status(200).json({
       success: true,
       message: 'Folder uploaded successfully',
@@ -240,7 +212,6 @@ router.post('/upload-folder', upload.array('files'), async (req, res) => {
   }
 });
 
-// Get project file structure
 router.get('/project/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -280,7 +251,6 @@ router.get('/project/:roomId', async (req, res) => {
   }
 });
 
-// Get file content directly from file system (for real-time editing)
 router.post('/file-content', async (req, res) => {
   try {
     const { roomId, filePath } = req.body;
@@ -292,23 +262,18 @@ router.post('/file-content', async (req, res) => {
     console.log(`Room ID: ${roomId}`);
     console.log(`Original file path: ${filePath}`);
 
-    // Normalize incoming path to use forward slashes and remove duplicate slashes
     const normalizedFilePath = filePath.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\.\//, '');
     console.log(`Normalized file path: ${normalizedFilePath}`);
 
-    // Get the project path for this room
     const projectPath = getProjectPath(roomId);
     console.log(`Project path: ${projectPath}`);
 
-    // Helper: recursive search for a matching path or filename inside projectPath
     const findFileRecursively = async (baseDir, targetRelPath) => {
-      // Try exact resolve first
       const candidate = path.resolve(baseDir, targetRelPath);
       if (await fs.pathExists(candidate)) return candidate;
 
-      // Try searching for a file with same relative tail (e.g. "src/index.js")
       const tailParts = targetRelPath.split('/');
-      const tail = tailParts.slice(-3).join('/'); // try last up-to-3 parts
+      const tail = tailParts.slice(-3).join('/');
       let found = null;
 
       const walk = async (dir) => {
@@ -336,21 +301,15 @@ router.post('/file-content', async (req, res) => {
       return found;
     };
 
-    // Resolve file path robustly
-    // 1) direct resolve with normalized path
-    // 2) try projectPath + normalizedFilePath
-    // 3) fallback to recursive search inside projectPath
     let fullPath = path.resolve(projectPath, ...normalizedFilePath.split('/'));
     console.log(`Trying direct fullPath: ${fullPath}`);
 
     if (!await fs.pathExists(fullPath)) {
-      // try alternative simple join (handles edge cases)
       const alt = path.resolve(projectPath, normalizedFilePath);
       console.log(`Direct not found. Trying alt: ${alt}`);
       if (await fs.pathExists(alt)) {
         fullPath = alt;
       } else {
-        // Fallback recursive search
         console.log('Direct and alt not found. Starting recursive search inside projectPath...');
         const found = await findFileRecursively(projectPath, normalizedFilePath);
         if (found) {
@@ -358,13 +317,11 @@ router.post('/file-content', async (req, res) => {
           console.log(`Found file via recursive search: ${fullPath}`);
         } else {
           console.warn(`File not found after searching: ${normalizedFilePath}`);
-          // If not found, respond with placeholder content (keeps previous behavior)
           return res.json({ content: '// File not found' });
         }
       }
     }
 
-    // Read file safely (limit size etc. as before)
     const stats = await fs.stat(fullPath);
     let content = '';
     if (stats.size === 0) {
@@ -372,10 +329,8 @@ router.post('/file-content', async (req, res) => {
     } else if (stats.size > 5 * 1024 * 1024) {
       content = `Large file (${Math.round(stats.size / 1024 / 1024 * 100) / 100} MB) - too large to display`;
     } else {
-      // Try to read as utf-8
       try {
         content = await fs.readFile(fullPath, 'utf-8');
-        // If binary detection needed:
         if (content.includes('\0')) {
           content = `Binary file (${stats.size} bytes)`;
         }
@@ -394,7 +349,6 @@ router.post('/file-content', async (req, res) => {
   }
 });
 
-// Auto-save file content to disk (like VSCode)
 router.post('/save-file', async (req, res) => {
   try {
     const { roomId, filePath, content, localPath } = req.body;
@@ -403,7 +357,6 @@ router.post('/save-file', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Store the user's local path if provided
     if (localPath) {
       setUserLocalPath(roomId, localPath);
     }
@@ -411,19 +364,15 @@ router.post('/save-file', async (req, res) => {
     console.log(`\n=== AUTO-SAVE REQUEST ===`);
     console.log(`Room: ${roomId}, File: ${filePath}, Content length: ${content.length}`);
 
-    // Get the project path for this room
     const projectPath = getProjectPath(roomId);
     const targetPath = path.join(projectPath, filePath);
 
-    // Ensure the directory exists
     await fs.ensureDir(path.dirname(targetPath));
 
-    // Write content to disk
     await fs.writeFile(targetPath, content, 'utf-8');
 
     console.log(`File saved to: ${targetPath}`);
 
-    // Also save to user's local directory if specified
     const userLocalDir = getUserLocalPath(roomId);
     if (userLocalDir) {
       try {
@@ -433,16 +382,13 @@ router.post('/save-file', async (req, res) => {
         console.log(`File also saved to user's local directory: ${userTargetPath}`);
       } catch (localError) {
         console.error('Error saving to user local directory:', localError);
-        // Don't fail the request if local save fails, just log it
       }
     }
 
     console.log(`=== SAVE SUCCESS ===`);
 
-    // Update the project in the database
     const project = await Project.findOne({ roomId });
     if (project) {
-      // Find and update the file in the file structure
       const updateFileInStructure = (items) => {
         return items.map(item => {
           if (item.type === 'file' && item.path === filePath) {
@@ -458,7 +404,6 @@ router.post('/save-file', async (req, res) => {
       project.fileStructure = updateFileInStructure(project.fileStructure);
       project.lastModified = new Date();
 
-      // Also update the content in the project's file structure
       const updateFileContent = (items) => {
         return items.map(item => {
           if (item.type === 'file' && item.path === filePath) {
@@ -490,7 +435,6 @@ router.post('/save-file', async (req, res) => {
   }
 });
 
-// Create new file or folder
 router.post('/create-item', async (req, res) => {
   try {
     const { roomId, parentPath = '', name, type = 'file', content = '' } = req.body;
@@ -502,36 +446,29 @@ router.post('/create-item', async (req, res) => {
     console.log(`\n=== CREATE ITEM REQUEST ===`);
     console.log(`Room: ${roomId}, Type: ${type}, Name: ${name}, Parent: ${parentPath}`);
 
-    // Get project base path
     const basePath = getProjectPath(roomId);
     await fs.ensureDir(basePath);
 
-    // Construct new item path
     const newItemPath = path.join(basePath, parentPath, name);
     console.log(`Creating at: ${newItemPath}`);
 
-    // Check if item already exists
     const exists = await fs.pathExists(newItemPath);
     if (exists) {
       return res.status(400).json({ error: `${type} already exists` });
     }
 
-    // Create file or folder
     if (type === 'folder') {
       await fs.ensureDir(newItemPath);
       console.log(`Folder created: ${newItemPath}`);
     } else {
-      // Create file with sample content based on extension
       const ext = path.extname(name).toLowerCase();
       const fileContent = content || getSampleContent(name, ext);
       await fs.writeFile(newItemPath, fileContent, 'utf-8');
       console.log(`File created: ${newItemPath}, size: ${fileContent.length} bytes`);
     }
 
-    // Build relative path for response
     const relativePath = parentPath ? `${parentPath}/${name}` : name;
 
-    // Update or create the project in the database
     let project = await Project.findOne({ roomId });
 
     const newItem = {
@@ -546,9 +483,7 @@ router.post('/create-item', async (req, res) => {
     };
 
     if (project) {
-      // Add the new item to the file structure
       if (parentPath) {
-        // Find parent folder and add to its children
         const addToParent = (items) => {
           return items.map(item => {
             if (item.type === 'folder' && item.path === parentPath) {
@@ -563,7 +498,6 @@ router.post('/create-item', async (req, res) => {
 
         project.fileStructure = addToParent(project.fileStructure);
       } else {
-        // Add to root level
         project.fileStructure.push(newItem);
       }
 
@@ -571,7 +505,6 @@ router.post('/create-item', async (req, res) => {
       project.lastModified = new Date();
       await project.save();
 
-      // Broadcast file structure update to all users in the room
       if (socketIO) {
         socketIO.to(roomId).emit('fileStructureUpdate', {
           roomId,
@@ -579,10 +512,9 @@ router.post('/create-item', async (req, res) => {
           projectName: project.projectName,
           activeFile: project.activeFile
         });
-        console.log(`📡 Broadcasted fileStructureUpdate to room ${roomId}`);
+        console.log(`Broadcasted fileStructureUpdate to room ${roomId}`);
       }
     } else {
-      // Create new project if it doesn't exist
       project = new Project({
         roomId,
         projectName: `Room ${roomId}`,
@@ -593,7 +525,6 @@ router.post('/create-item', async (req, res) => {
       await project.save();
       console.log(`✨ Created new project for room ${roomId}`);
 
-      // Broadcast file structure update to all users in the room
       if (socketIO) {
         socketIO.to(roomId).emit('fileStructureUpdate', {
           roomId,
@@ -706,7 +637,6 @@ Start editing to add your code.`;
   }
 }
 
-// Delete file or folder
 router.delete('/delete-item', async (req, res) => {
   try {
     const { roomId, filePath } = req.body;
@@ -718,29 +648,24 @@ router.delete('/delete-item', async (req, res) => {
     console.log(`\n=== DELETE ITEM REQUEST ===`);
     console.log(`Room: ${roomId}, Path: ${filePath}`);
 
-    // Get project base path
     const basePath = getProjectPath(roomId);
     const itemPath = path.join(basePath, filePath);
 
     console.log(`Deleting: ${itemPath}`);
 
-    // Check if item exists
     const exists = await fs.pathExists(itemPath);
     if (!exists) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Remove the item (file or folder)
     await fs.remove(itemPath);
 
-    // Update the project in the database
     const project = await Project.findOne({ roomId });
     if (project) {
-      // Remove the item from the file structure
       const removeFromStructure = (items) => {
         return items.filter(item => {
           if (item.path === filePath) {
-            return false; // Remove this item
+            return false; 
           }
           if (item.children) {
             item.children = removeFromStructure(item.children);
@@ -767,7 +692,6 @@ router.delete('/delete-item', async (req, res) => {
   }
 });
 
-// Rename file or folder
 router.put('/rename-item', async (req, res) => {
   try {
     const { roomId, oldPath, newName } = req.body;
@@ -779,43 +703,34 @@ router.put('/rename-item', async (req, res) => {
     console.log(`\n=== RENAME ITEM REQUEST ===`);
     console.log(`Room: ${roomId}, Old: ${oldPath}, New: ${newName}`);
 
-    // Get project base path
     const basePath = getProjectPath(roomId);
     const oldItemPath = path.join(basePath, oldPath);
 
-    // Build new path
     const parentDir = path.dirname(oldPath);
     const newPath = parentDir === '.' ? newName : path.join(parentDir, newName);
     const newItemPath = path.join(basePath, newPath);
 
     console.log(`Renaming: ${oldItemPath} -> ${newItemPath}`);
 
-    // Check if old item exists
     const exists = await fs.pathExists(oldItemPath);
     if (!exists) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Check if new name already exists
     const newExists = await fs.pathExists(newItemPath);
     if (newExists) {
       return res.status(400).json({ error: 'An item with that name already exists' });
     }
 
-    // Rename the item on disk
     await fs.move(oldItemPath, newItemPath);
 
-    // Update the project in the database
     const project = await Project.findOne({ roomId });
     if (project) {
-      // Update the item in the file structure
       const updateInStructure = (items) => {
         return items.map(item => {
           if (item.path === oldPath) {
-            // Update this item
             const updatedItem = { ...item, name: newName, path: newPath };
             if (updatedItem.children) {
-              // Update paths of all children recursively
               const updateChildrenPaths = (children, oldParentPath, newParentPath) => {
                 return children.map(child => {
                   const updatedChildPath = child.path.replace(oldParentPath, newParentPath);
@@ -856,7 +771,6 @@ router.put('/rename-item', async (req, res) => {
   }
 });
 
-// Toggle folder expansion state
 router.post('/toggle-folder/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -871,7 +785,6 @@ router.post('/toggle-folder/:roomId', async (req, res) => {
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    // Update the folder expansion state in the file structure
     const updateFolderExpansion = (items) => {
       return items.map(item => {
         if (item.type === 'folder' && item.path === folderPath) {
@@ -933,7 +846,6 @@ router.post('/get-file/:roomId', async (req, res) => {
   }
 });
 
-// Update file content
 router.put('/update-file/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -962,7 +874,6 @@ router.put('/update-file/:roomId', async (req, res) => {
   }
 });
 
-// Create new file
 router.post('/file/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -979,7 +890,6 @@ router.post('/file/:roomId', async (req, res) => {
 
     const newPath = parentPath ? `${parentPath}/${name}` : name;
 
-    // Check if file already exists
     const existingFile = project.findFileByPath(newPath);
     if (existingFile) {
       return res.status(400).json({ error: 'File already exists' });
@@ -1015,7 +925,6 @@ router.post('/file/:roomId', async (req, res) => {
   }
 });
 
-// Delete file/folder
 router.delete('/delete-file/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -1044,7 +953,6 @@ router.delete('/delete-file/:roomId', async (req, res) => {
   }
 });
 
-// Set active file
 router.post('/active-file/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -1069,7 +977,6 @@ router.post('/active-file/:roomId', async (req, res) => {
   }
 });
 
-// Set user local directory
 router.post('/set-local-path/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -1079,13 +986,11 @@ router.post('/set-local-path/:roomId', async (req, res) => {
       return res.status(400).json({ error: 'Room ID and local path are required' });
     }
 
-    // Validate that the path exists
     const exists = await fs.pathExists(localPath);
     if (!exists) {
       return res.status(400).json({ error: 'Specified local path does not exist' });
     }
 
-    // Store the user's local path
     setUserLocalPath(roomId, localPath);
 
     res.json({
@@ -1100,7 +1005,6 @@ router.post('/set-local-path/:roomId', async (req, res) => {
   }
 });
 
-// Get user local directory
 router.get('/get-local-path/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -1122,11 +1026,9 @@ router.get('/get-local-path/:roomId', async (req, res) => {
   }
 });
 
-// Export a function that accepts Socket.IO instance
 module.exports = (io) => {
-  // Store the io instance
   socketIO = io;
-  console.log('🔌 File Explorer routes initialized with Socket.IO');
+  console.log('File Explorer routes initialized with Socket.IO');
 
   return router;
 };
